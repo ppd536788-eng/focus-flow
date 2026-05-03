@@ -13,6 +13,7 @@ import Onboarding from "./pages/app/Onboarding";
 import Schedule from "./pages/app/Schedule";
 import Focus from "./pages/app/Focus";
 import Achievements from "./pages/app/Achievements";
+import Questions from "./pages/app/Questions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="onboarding" element={<Onboarding />} />
               <Route path="cronograma" element={<Schedule />} />
               <Route path="foco" element={<Focus />} />
+              <Route path="questoes" element={<Questions />} />
               <Route path="conquistas" element={<Achievements />} />
             </Route>
             <Route path="*" element={<NotFound />} />
