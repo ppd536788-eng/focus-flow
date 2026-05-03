@@ -16,11 +16,20 @@ export const useProfile = () => {
   });
 };
 
+type ProfilePatch = {
+  display_name?: string;
+  cognitive_profile?: any;
+  xp?: number;
+  level?: number;
+  current_plan?: string;
+  onboarding_completed?: boolean;
+};
+
 export const useUpdateProfile = () => {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (patch: Record<string, unknown>) => {
+    mutationFn: async (patch: ProfilePatch) => {
       const { data, error } = await supabase
         .from("profiles").update(patch).eq("user_id", user!.id).select().single();
       if (error) throw error;
