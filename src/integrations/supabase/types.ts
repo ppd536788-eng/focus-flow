@@ -14,7 +14,135 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      analytics_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata_json: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata_json?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata_json?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      focus_sessions: {
+        Row: {
+          completed_at: string
+          created_at: string
+          duration_seconds: number
+          id: string
+          topic_id: string | null
+          topic_label: string | null
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          duration_seconds: number
+          id?: string
+          topic_id?: string | null
+          topic_label?: string | null
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          topic_id?: string | null
+          topic_label?: string | null
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          cognitive_profile: Json | null
+          created_at: string
+          current_plan: string | null
+          display_name: string | null
+          id: string
+          level: number
+          onboarding_completed: boolean
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          cognitive_profile?: Json | null
+          created_at?: string
+          current_plan?: string | null
+          display_name?: string | null
+          id?: string
+          level?: number
+          onboarding_completed?: boolean
+          updated_at?: string
+          user_id: string
+          xp?: number
+        }
+        Update: {
+          cognitive_profile?: Json | null
+          created_at?: string
+          current_plan?: string | null
+          display_name?: string | null
+          id?: string
+          level?: number
+          onboarding_completed?: boolean
+          updated_at?: string
+          user_id?: string
+          xp?: number
+        }
+        Relationships: []
+      }
+      study_plans: {
+        Row: {
+          created_at: string
+          data_json: Json
+          id: string
+          is_active: boolean
+          is_adaptive: boolean
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_json?: Json
+          id?: string
+          is_active?: boolean
+          is_adaptive?: boolean
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_json?: Json
+          id?: string
+          is_active?: boolean
+          is_adaptive?: boolean
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
