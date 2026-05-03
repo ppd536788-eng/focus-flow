@@ -110,6 +110,80 @@ export type Database = {
         }
         Relationships: []
       }
+      question_attempts: {
+        Row: {
+          ai_explanation: string | null
+          chosen: string
+          created_at: string
+          id: string
+          is_correct: boolean
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          ai_explanation?: string | null
+          chosen: string
+          created_at?: string
+          id?: string
+          is_correct: boolean
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          ai_explanation?: string | null
+          chosen?: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          question_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_attempts_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          choices: Json
+          correct_choice: string
+          created_at: string
+          difficulty: string
+          explanation: string | null
+          id: string
+          statement: string
+          subject: string
+          topic: string | null
+        }
+        Insert: {
+          choices: Json
+          correct_choice: string
+          created_at?: string
+          difficulty?: string
+          explanation?: string | null
+          id?: string
+          statement: string
+          subject: string
+          topic?: string | null
+        }
+        Update: {
+          choices?: Json
+          correct_choice?: string
+          created_at?: string
+          difficulty?: string
+          explanation?: string | null
+          id?: string
+          statement?: string
+          subject?: string
+          topic?: string | null
+        }
+        Relationships: []
+      }
       study_plans: {
         Row: {
           created_at: string
