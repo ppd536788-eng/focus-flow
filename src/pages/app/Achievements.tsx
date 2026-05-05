@@ -5,12 +5,33 @@ import { useRecentSessions } from "@/hooks/useFocusSessions";
 
 const Achievements = () => {
   const { data: profile } = useProfile();
-  const { data: sessions } = useRecentSessions(50);
+  const { data: sessions } = useRecentSessions(120);
   const totalMin = (sessions ?? []).reduce((s, x) => s + Math.round(x.duration_seconds / 60), 0);
   const xp = profile?.xp ?? 0;
   const level = profile?.level ?? 1;
   const xpInLevel = xp % 200;
   const pct = (xpInLevel / 200) * 100;
+
+  // Build last 28 days heatmap
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days: { date: Date; minutes: number }[] = [];
+  for (let i = 27; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    days.push({ date: d, minutes: 0 });
+  }
+  (sessions ?? []).forEach((s) => {
+    const d = new Date(s.completed_at); d.setHours(0, 0, 0, 0);
+    const slot = days.find((x) => x.date.getTime() === d.getTime());
+    if (slot) slot.minutes += Math.round(s.duration_seconds / 60);
+  });
+  const intensity = (m: number) => {
+    if (m === 0) return "bg-muted/40";
+    if (m < 25) return "bg-accent/30";
+    if (m < 60) return "bg-accent/60";
+    if (m < 120) return "bg-accent/80";
+    return "bg-accent";
+  };
 
   return (
     <div className="space-y-8 max-w-2xl">
@@ -33,6 +54,33 @@ const Achievements = () => {
         <Card icon={Trophy} label="XP total" value={xp} />
         <Card icon={Flame} label="Sessões" value={sessions?.length ?? 0} />
         <Card icon={Star} label="Minutos" value={totalMin} />
+      </div>
+
+      <div className="rounded-3xl border border-border bg-card p-6 shadow-soft">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-display text-xl">Últimos 28 dias</h3>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            menos
+            <span className="size-3 rounded-sm bg-muted/40 ml-1" />
+            <span className="size-3 rounded-sm bg-accent/30" />
+            <span className="size-3 rounded-sm bg-accent/60" />
+            <span className="size-3 rounded-sm bg-accent/80" />
+            <span className="size-3 rounded-sm bg-accent mr-1" />
+            mais
+          </div>
+        </div>
+        <div className="grid grid-cols-7 gap-1.5">
+          {days.map((d, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.015 }}
+              title={`${d.date.toLocaleDateString("pt-BR")} — ${d.minutes} min`}
+              className={`aspect-square rounded-md ${intensity(d.minutes)}`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
