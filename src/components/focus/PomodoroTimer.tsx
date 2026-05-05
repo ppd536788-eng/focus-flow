@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Play, Pause, RotateCcw, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLogSession } from "@/hooks/useFocusSessions";
+import { useXpBurst } from "@/providers/XpProvider";
 import { toast } from "sonner";
 
 const STORAGE_KEY = "foco-leve:pomodoro:v1";
@@ -44,6 +45,7 @@ export const PomodoroTimer = ({ topic }: { topic?: string }) => {
   const [state, setState] = useState<State>(() => load());
   const tickRef = useRef<number | null>(null);
   const log = useLogSession();
+  const { burst } = useXpBurst();
   const initialDuration = state.phase === "focus" ? FOCUS_MIN * 60 : BREAK_MIN * 60;
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }, [state]);
@@ -58,7 +60,7 @@ export const PomodoroTimer = ({ topic }: { topic?: string }) => {
           if (s.phase === "focus") {
             log.mutate(
               { duration_seconds: FOCUS_MIN * 60, topic_label: s.topic || topic, xp_earned: 25 },
-              { onSuccess: () => toast.success("+25 XP — sessão concluída!") }
+              { onSuccess: () => { burst(25, "Foco completo"); toast.success("Sessão concluída!"); } }
             );
             return { phase: "break", startedAt: null, remaining: BREAK_MIN * 60, running: false, topic: s.topic };
           }

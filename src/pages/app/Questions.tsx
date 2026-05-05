@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { Check, ChevronRight, Loader2, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuestions, useSubmitAttempt, useExplainError } from "@/hooks/useQuestions";
+import { useXpBurst } from "@/providers/XpProvider";
 import { toast } from "sonner";
 
 const Questions = () => {
@@ -14,6 +15,7 @@ const Questions = () => {
   const [revealed, setRevealed] = useState(false);
   const submit = useSubmitAttempt();
   const explain = useExplainError();
+  const { burst } = useXpBurst();
   const [aiText, setAiText] = useState<string | null>(null);
 
   const subjects = useMemo(() => {
@@ -29,7 +31,7 @@ const Questions = () => {
     setRevealed(true);
     const correct = cid === q.correct_choice;
     submit.mutate({ question_id: q.id, chosen: cid, is_correct: correct }, {
-      onSuccess: () => correct && toast.success("+10 XP — resposta correta!"),
+      onSuccess: () => { if (correct) { burst(10, "Acertou!"); toast.success("Resposta correta!"); } },
     });
     if (!correct) {
       setAiText(null);
