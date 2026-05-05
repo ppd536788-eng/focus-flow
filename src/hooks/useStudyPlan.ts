@@ -37,3 +37,37 @@ export const useGeneratePlan = () => {
     },
   });
 };
+
+export const useUpdatePlanData = () => {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data_json }: { id: string; data_json: any }) => {
+      const { data, error } = await supabase
+        .from("study_plans")
+        .update({ data_json })
+        .eq("id", id)
+        .eq("user_id", user!.id)
+        .select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["active-plan", user?.id] }),
+  });
+};
+
+export const useAdaptPlan = () => {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("adapt-plan", { body: {} });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["active-plan", user?.id] });
+      qc.invalidateQueries({ queryKey: ["profile", user?.id] });
+    },
+  });
+};
