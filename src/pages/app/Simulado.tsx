@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useQuestions, useSubmitAttempt } from "@/hooks/useQuestions";
-import { useXp } from "@/providers/XpProvider";
+import { useXpBurst } from "@/providers/XpProvider";
 import { Timer, Trophy, RotateCcw, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,7 +17,7 @@ const DURATIONS = [5, 10, 20, 30]; // minutos
 export default function Simulado() {
   const { data: allQuestions, isLoading } = useQuestions();
   const submit = useSubmitAttempt();
-  const { burst } = useXp();
+  const { burst } = useXpBurst();
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [size, setSize] = useState(10);
@@ -81,7 +81,7 @@ export default function Simulado() {
         await submit.mutateAsync({ question_id: q.id, chosen, is_correct: isCorrect });
       } catch {/* noop */}
     }
-    if (correct > 0) burst(`+${correct * 10} XP`);
+    if (correct > 0) burst(correct * 10, "Simulado");
     toast.success(`Simulado concluído: ${correct}/${pool.length}`);
   };
 
