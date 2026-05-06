@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { XpProvider } from "@/providers/XpProvider";
+import { ThemeProvider } from "@/providers/ThemeProvider";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { AppShell } from "@/components/layout/AppShell";
 import Landing from "./pages/Landing";
@@ -16,6 +17,7 @@ import Focus from "./pages/app/Focus";
 import Achievements from "./pages/app/Achievements";
 import Questions from "./pages/app/Questions";
 import Settings from "./pages/app/Settings";
+import Simulado from "./pages/app/Simulado";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -24,6 +26,7 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -39,6 +42,7 @@ const App = () => (
               <Route path="cronograma" element={<Schedule />} />
               <Route path="foco" element={<Focus />} />
               <Route path="questoes" element={<Questions />} />
+              <Route path="simulado" element={<Simulado />} />
               <Route path="conquistas" element={<Achievements />} />
               <Route path="ajustes" element={<Settings />} />
             </Route>
@@ -48,6 +52,7 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
