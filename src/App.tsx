@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { XpProvider } from "@/providers/XpProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import { RemindersProvider } from "@/providers/RemindersProvider";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import { AppShell } from "@/components/layout/AppShell";
 import Landing from "./pages/Landing";
@@ -18,6 +19,7 @@ import Achievements from "./pages/app/Achievements";
 import Questions from "./pages/app/Questions";
 import Settings from "./pages/app/Settings";
 import Simulado from "./pages/app/Simulado";
+import Revisao from "./pages/app/Revisao";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -33,6 +35,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <XpProvider>
+           <RemindersProvider>
            <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
@@ -43,11 +46,13 @@ const App = () => (
               <Route path="foco" element={<Focus />} />
               <Route path="questoes" element={<Questions />} />
               <Route path="simulado" element={<Simulado />} />
+              <Route path="revisao" element={<Revisao />} />
               <Route path="conquistas" element={<Achievements />} />
               <Route path="ajustes" element={<Settings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
            </Routes>
+           </RemindersProvider>
           </XpProvider>
         </AuthProvider>
       </BrowserRouter>
