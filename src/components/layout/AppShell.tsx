@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { Home, Calendar, Brain, Trophy, LogOut, Sparkles, ListChecks, Settings as SettingsIcon, Timer, Sun, Moon } from "lucide-react";
+import { Home, Calendar, Brain, Trophy, LogOut, Sparkles, ListChecks, Settings as SettingsIcon, Timer, Sun, Moon, RotateCcw } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 import { useTheme } from "@/providers/ThemeProvider";
@@ -11,6 +11,7 @@ const links = [
   { to: "/app/foco", label: "Foco", icon: Brain },
   { to: "/app/questoes", label: "Questões", icon: ListChecks },
   { to: "/app/simulado", label: "Simulado", icon: Timer },
+  { to: "/app/revisao", label: "Revisão", icon: RotateCcw },
   { to: "/app/conquistas", label: "Conquistas", icon: Trophy },
   { to: "/app/ajustes", label: "Ajustes", icon: SettingsIcon },
 ];
@@ -54,7 +55,7 @@ export const AppShell = () => {
 
       {/* Mobile bottom nav */}
       <nav className="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-card/95 backdrop-blur-xl border-t border-border">
-        <div className="grid grid-cols-7">
+        <div className="grid grid-cols-8">
           {links.map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end as any}
               className={({ isActive }) =>
