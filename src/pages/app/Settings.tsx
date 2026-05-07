@@ -7,12 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/providers/AuthProvider";
+import { useReminders } from "@/providers/RemindersProvider";
+import { Switch } from "@/components/ui/switch";
+import { Bell } from "lucide-react";
 import { toast } from "sonner";
 
 const Settings = () => {
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
   const update = useUpdateProfile();
+  const reminders = useReminders();
   const [name, setName] = useState("");
   const [goal, setGoal] = useState("");
   const [chronotype, setChronotype] = useState<string>("morning");
@@ -85,6 +89,29 @@ const Settings = () => {
           </Button>
           <Button variant="ghost" onClick={signOut}>Sair</Button>
         </div>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+        className="rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-soft space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="size-12 rounded-2xl bg-gradient-warm grid place-items-center text-accent-foreground">
+            <Bell className="size-5" />
+          </div>
+          <div>
+            <div className="font-display text-lg">Lembretes de estudo</div>
+            <div className="text-xs text-muted-foreground">Avisos no horário dos seus blocos.</div>
+          </div>
+        </div>
+        {reminders.permission === "unsupported" ? (
+          <p className="text-sm text-muted-foreground">Seu navegador não suporta notificações.</p>
+        ) : reminders.permission !== "granted" ? (
+          <Button variant="outline" onClick={reminders.request}>Permitir notificações</Button>
+        ) : (
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Lembretes ativados</span>
+            <Switch checked={reminders.enabled} onCheckedChange={reminders.setEnabled} />
+          </div>
+        )}
       </motion.div>
     </div>
   );
