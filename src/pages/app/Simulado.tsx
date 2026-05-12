@@ -75,7 +75,7 @@ export default function Simulado() {
     for (const q of pool) {
       const chosen = answers[q.id];
       if (!chosen) continue;
-      const isCorrect = chosen === q.correct_choice;
+      const isCorrect = chosen === normCorrect(q.correct_choice);
       if (isCorrect) correct++;
       try {
         await submit.mutateAsync({ question_id: q.id, chosen, is_correct: isCorrect });
