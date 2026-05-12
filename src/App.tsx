@@ -20,6 +20,7 @@ import Questions from "./pages/app/Questions";
 import Settings from "./pages/app/Settings";
 import Simulado from "./pages/app/Simulado";
 import Revisao from "./pages/app/Revisao";
+import Stats from "./pages/app/Stats";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="questoes" element={<Questions />} />
               <Route path="simulado" element={<Simulado />} />
               <Route path="revisao" element={<Revisao />} />
+              <Route path="estatisticas" element={<Stats />} />
               <Route path="conquistas" element={<Achievements />} />
               <Route path="ajustes" element={<Settings />} />
             </Route>
