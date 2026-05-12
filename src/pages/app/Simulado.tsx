@@ -75,7 +75,7 @@ export default function Simulado() {
     for (const q of pool) {
       const chosen = answers[q.id];
       if (!chosen) continue;
-      const isCorrect = chosen === q.correct_choice;
+      const isCorrect = chosen === normCorrect(q.correct_choice);
       if (isCorrect) correct++;
       try {
         await submit.mutateAsync({ question_id: q.id, chosen, is_correct: isCorrect });
@@ -93,6 +93,24 @@ export default function Simulado() {
   };
 
   const fmtTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+  const normalizeChoices = (raw: any): Record<string, string> => {
+    if (Array.isArray(raw)) {
+      const out: Record<string, string> = {};
+      raw.forEach((c: any, i) => {
+        const id = String(c?.id ?? String.fromCharCode(65 + i)).toUpperCase();
+        out[id] = String(c?.text ?? "");
+      });
+      return out;
+    }
+    if (raw && typeof raw === "object") {
+      const out: Record<string, string> = {};
+      Object.entries(raw).forEach(([k, v]) => { out[String(k).toUpperCase()] = String(v); });
+      return out;
+    }
+    return {};
+  };
+  const normCorrect = (v: any) => String(v ?? "").toUpperCase();
 
   if (phase === "setup") {
     return (
@@ -156,8 +174,9 @@ export default function Simulado() {
           <h2 className="font-display text-xl">Revisão</h2>
           {pool.map((q, i) => {
             const chosen = answers[q.id];
-            const ok = chosen === q.correct_choice;
-            const choices = (q.choices ?? {}) as Record<string, string>;
+            const correct = normCorrect(q.correct_choice);
+            const ok = chosen === correct;
+            const choices = normalizeChoices(q.choices);
             return (
               <Card key={q.id} className="p-4 space-y-2">
                 <div className="flex items-start gap-2">
@@ -168,7 +187,7 @@ export default function Simulado() {
                     <div className="mt-2 text-xs space-y-1">
                       <div>Sua resposta: <span className="font-medium">{chosen ? `${chosen}) ${choices[chosen] ?? ""}` : "—"}</span></div>
                       {!ok && (
-                        <div className="text-focus">Correta: <span className="font-medium">{q.correct_choice}) {choices[q.correct_choice] ?? ""}</span></div>
+                        <div className="text-focus">Correta: <span className="font-medium">{correct}) {choices[correct] ?? ""}</span></div>
                       )}
                     </div>
                   </div>
@@ -182,7 +201,7 @@ export default function Simulado() {
   }
 
   // running
-  const choices = (current?.choices ?? {}) as Record<string, string>;
+  const choices = normalizeChoices(current?.choices);
   const selected = current ? answers[current.id] : undefined;
 
   return (
