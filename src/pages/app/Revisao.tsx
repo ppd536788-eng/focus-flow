@@ -67,7 +67,7 @@ const useWrongQuestions = () => {
       const { data: qs, error: e2 } = await supabase
         .from("questions").select("*").in("id", ids);
       if (e2) throw e2;
-      return (qs ?? []) as any as WrongQ[];
+      return (qs ?? []) as unknown as WrongQ[];
     },
   });
 };
