@@ -24,12 +24,18 @@ const Questions = () => {
   }, [questions]);
 
   const q: any = questions?.[idx];
+  const choices: { id: string; text: string }[] = Array.isArray(q?.choices)
+    ? q.choices
+    : q?.choices && typeof q.choices === "object"
+      ? Object.entries(q.choices).map(([id, text]) => ({ id: String(id).toLowerCase(), text: String(text) }))
+      : [];
+  const correctId = String(q?.correct_choice ?? "").toLowerCase();
 
   const choose = async (cid: string) => {
     if (revealed || !q) return;
     setChosen(cid);
     setRevealed(true);
-    const correct = cid === q.correct_choice;
+    const correct = cid === correctId;
     submit.mutate({ question_id: q.id, chosen: cid, is_correct: correct }, {
       onSuccess: () => { if (correct) { burst(10, "Acertou!"); toast.success("Resposta correta!"); } },
     });
@@ -37,8 +43,8 @@ const Questions = () => {
       setAiText(null);
       explain.mutate({
         question: q.statement,
-        userAnswer: q.choices.find((c: any) => c.id === cid)?.text ?? cid,
-        correctAnswer: q.choices.find((c: any) => c.id === q.correct_choice)?.text ?? q.correct_choice,
+        userAnswer: choices.find((c) => c.id === cid)?.text ?? cid,
+        correctAnswer: choices.find((c) => c.id === correctId)?.text ?? correctId,
         subject: q.subject,
       }, {
         onSuccess: (d) => setAiText(d.explanation),
@@ -83,9 +89,9 @@ const Questions = () => {
           <p className="font-display text-xl sm:text-2xl text-balance mb-6">{q.statement}</p>
 
           <div className="space-y-2">
-            {q.choices.map((c: any) => {
+            {choices.map((c) => {
               const isChosen = chosen === c.id;
-              const isCorrect = c.id === q.correct_choice;
+              const isCorrect = c.id === correctId;
               const showState = revealed && (isChosen || isCorrect);
               return (
                 <button
@@ -115,7 +121,7 @@ const Questions = () => {
               <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-accent mb-2">
                 <Sparkles className="size-3.5" /> Explicação
               </div>
-              {chosen === q.correct_choice ? (
+              {chosen === correctId ? (
                 <p className="text-sm">{q.explanation || "Resposta correta!"}</p>
               ) : explain.isPending && !aiText ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
