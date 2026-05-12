@@ -20,11 +20,17 @@ const Stats = () => {
       const since = subDays(new Date(), 14).toISOString();
       const [sessionsRes, attemptsRes] = await Promise.all([
         supabase.from("focus_sessions").select("*").eq("user_id", user!.id).gte("completed_at", since),
-        supabase.from("question_attempts").select("*, questions(subject)").eq("user_id", user!.id).gte("created_at", since),
+        supabase.from("question_attempts").select("*").eq("user_id", user!.id).gte("created_at", since),
       ]);
+      const ids = Array.from(new Set((attemptsRes.data ?? []).map((a: any) => a.question_id)));
+      const qRes = ids.length
+        ? await supabase.from("questions").select("id, subject").in("id", ids)
+        : { data: [] as any[] };
+      const subjectById = new Map((qRes.data ?? []).map((q: any) => [q.id, q.subject]));
+      const attempts = (attemptsRes.data ?? []).map((a: any) => ({ ...a, subject: subjectById.get(a.question_id) ?? "Outros" }));
       return {
         sessions: sessionsRes.data ?? [],
-        attempts: (attemptsRes.data ?? []) as any[],
+        attempts,
       };
     },
   });
@@ -46,7 +52,7 @@ const Stats = () => {
   const bySubject = useMemo(() => {
     const map = new Map<string, { subject: string; correct: number; total: number }>();
     (data?.attempts ?? []).forEach((a: any) => {
-      const subj = a.questions?.subject ?? "Outros";
+      const subj = a.subject ?? "Outros";
       const cur = map.get(subj) ?? { subject: subj, correct: 0, total: 0 };
       cur.total += 1;
       if (a.is_correct) cur.correct += 1;
