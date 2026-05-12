@@ -15,10 +15,33 @@ type WrongQ = {
   id: string;
   subject: string;
   statement: string;
-  choices: Record<string, string>;
+  choices: unknown;
   correct_choice: string;
   explanation: string | null;
 };
+
+const normalizeChoices = (raw: unknown): Record<string, string> => {
+  if (Array.isArray(raw)) {
+    return raw.reduce<Record<string, string>>((acc, choice, index) => {
+      const fallbackId = String.fromCharCode(65 + index);
+      const id = String(choice?.id ?? fallbackId).toUpperCase();
+      acc[id] = String(choice?.text ?? choice ?? "");
+      return acc;
+    }, {});
+  }
+
+  if (raw && typeof raw === "object") {
+    return Object.entries(raw as Record<string, unknown>).reduce<Record<string, string>>((acc, [key, value]) => {
+      const choice = value && typeof value === "object" ? value as { text?: unknown } : null;
+      acc[String(key).toUpperCase()] = String(choice?.text ?? value ?? "");
+      return acc;
+    }, {});
+  }
+
+  return {};
+};
+
+const normalizeChoiceId = (value: unknown) => String(value ?? "").toUpperCase();
 
 const useWrongQuestions = () => {
   const { user } = useAuth();
@@ -44,7 +67,7 @@ const useWrongQuestions = () => {
       const { data: qs, error: e2 } = await supabase
         .from("questions").select("*").in("id", ids);
       if (e2) throw e2;
-      return (qs ?? []) as any as WrongQ[];
+      return (qs ?? []) as unknown as WrongQ[];
     },
   });
 };
@@ -59,6 +82,8 @@ export default function Revisao() {
 
   const pool = useMemo(() => questions ?? [], [questions]);
   const current = pool[idx];
+  const choices = useMemo(() => normalizeChoices(current?.choices), [current?.choices]);
+  const correctChoice = normalizeChoiceId(current?.correct_choice);
 
   useEffect(() => { setRevealed(false); setChosen(null); }, [idx]);
 
@@ -66,7 +91,7 @@ export default function Revisao() {
     if (!current || revealed) return;
     setChosen(key);
     setRevealed(true);
-    const isCorrect = key === current.correct_choice;
+    const isCorrect = key === normalizeChoiceId(current.correct_choice);
     try {
       await submit.mutateAsync({ question_id: current.id, chosen: key, is_correct: isCorrect });
       if (isCorrect) burst(10, "Revisão");
@@ -116,8 +141,8 @@ export default function Revisao() {
               </div>
               <p className="text-lg">{current.statement}</p>
               <div className="space-y-2">
-                {Object.entries(current.choices).map(([k, v]) => {
-                  const isCorrect = k === current.correct_choice;
+                {Object.entries(choices).map(([k, v]) => {
+                  const isCorrect = k === correctChoice;
                   const isChosen = chosen === k;
                   let cls = "border-border hover:border-accent/50 hover:bg-secondary";
                   if (revealed) {
