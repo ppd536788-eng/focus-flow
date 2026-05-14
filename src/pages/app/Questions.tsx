@@ -25,9 +25,15 @@ const Questions = () => {
 
   const q: any = questions?.[idx];
   const choices: { id: string; text: string }[] = Array.isArray(q?.choices)
-    ? q.choices
+    ? q.choices.map((c: any, i: number) => ({
+        id: String(c?.id ?? String.fromCharCode(97 + i)).toLowerCase(),
+        text: String(c?.text ?? c ?? ""),
+      }))
     : q?.choices && typeof q.choices === "object"
-      ? Object.entries(q.choices).map(([id, text]) => ({ id: String(id).toLowerCase(), text: String(text) }))
+      ? Object.entries(q.choices).map(([id, val]: [string, any]) => ({
+          id: String(id).toLowerCase(),
+          text: String(val?.text ?? val ?? ""),
+        }))
       : [];
   const correctId = String(q?.correct_choice ?? "").toLowerCase();
 
