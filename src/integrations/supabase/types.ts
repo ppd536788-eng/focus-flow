@@ -196,7 +196,7 @@ export type Database = {
           id: string
           image_url: string | null
           index: number | null
-          language: string | null
+          language: string
           source: string | null
           statement: string
           subject: string
@@ -217,7 +217,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           index?: number | null
-          language?: string | null
+          language?: string
           source?: string | null
           statement: string
           subject: string
@@ -238,7 +238,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           index?: number | null
-          language?: string | null
+          language?: string
           source?: string | null
           statement?: string
           subject?: string
