@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Save, User } from "lucide-react";
+import { Loader2, Save, User, Bell, Database, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,8 +9,8 @@ import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/providers/AuthProvider";
 import { useReminders } from "@/providers/RemindersProvider";
 import { Switch } from "@/components/ui/switch";
-import { Bell } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Settings = () => {
   const { user, signOut } = useAuth();
@@ -20,6 +20,27 @@ const Settings = () => {
   const [name, setName] = useState("");
   const [goal, setGoal] = useState("");
   const [chronotype, setChronotype] = useState<string>("morning");
+  const [syncing, setSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.from("sync_logs").select("finished_at,status").eq("job", "sync-enem")
+      .order("started_at", { ascending: false }).limit(1).maybeSingle()
+      .then(({ data }) => { if (data?.finished_at) setLastSync(data.finished_at); });
+  }, []);
+
+  const runSync = async () => {
+    setSyncing(true);
+    const t = toast.loading("Sincronizando questões do ENEM…");
+    const { data, error } = await supabase.functions.invoke("sync-enem-questions", {
+      body: { maxPerYear: 60 },
+    });
+    setSyncing(false);
+    toast.dismiss(t);
+    if (error) { toast.error("Falha ao sincronizar"); return; }
+    toast.success(`Sincronizado: ${data?.inserted ?? 0} questões`);
+    setLastSync(new Date().toISOString());
+  };
 
   useEffect(() => {
     if (profile) {
@@ -112,6 +133,25 @@ const Settings = () => {
             <Switch checked={reminders.enabled} onCheckedChange={reminders.setEnabled} />
           </div>
         )}
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+        className="rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-soft space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="size-12 rounded-2xl bg-gradient-warm grid place-items-center text-accent-foreground">
+            <Database className="size-5" />
+          </div>
+          <div>
+            <div className="font-display text-lg">Banco de questões ENEM</div>
+            <div className="text-xs text-muted-foreground">
+              {lastSync ? `Última sincronização: ${new Date(lastSync).toLocaleString("pt-BR")}` : "Nunca sincronizado"}
+            </div>
+          </div>
+        </div>
+        <Button variant="outline" onClick={runSync} disabled={syncing}>
+          {syncing ? <Loader2 className="size-4 mr-2 animate-spin" /> : <RefreshCw className="size-4 mr-2" />}
+          Sincronizar agora
+        </Button>
       </motion.div>
     </div>
   );

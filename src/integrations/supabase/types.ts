@@ -38,6 +38,39 @@ export type Database = {
         }
         Relationships: []
       }
+      exams: {
+        Row: {
+          created_at: string
+          disciplines: Json
+          id: string
+          languages: Json
+          last_synced_at: string | null
+          title: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          disciplines?: Json
+          id?: string
+          languages?: Json
+          last_synced_at?: string | null
+          title: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          disciplines?: Json
+          id?: string
+          languages?: Json
+          last_synced_at?: string | null
+          title?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       focus_sessions: {
         Row: {
           completed_at: string
@@ -150,37 +183,67 @@ export type Database = {
       }
       questions: {
         Row: {
+          alternatives_json: Json | null
           choices: Json
+          context: string | null
+          correct_alternative: string | null
           correct_choice: string
           created_at: string
           difficulty: string
+          discipline: string | null
           explanation: string | null
+          files: Json | null
           id: string
+          image_url: string | null
+          index: number | null
+          language: string
+          source: string | null
           statement: string
           subject: string
           topic: string | null
+          year: number | null
         }
         Insert: {
+          alternatives_json?: Json | null
           choices: Json
+          context?: string | null
+          correct_alternative?: string | null
           correct_choice: string
           created_at?: string
           difficulty?: string
+          discipline?: string | null
           explanation?: string | null
+          files?: Json | null
           id?: string
+          image_url?: string | null
+          index?: number | null
+          language?: string
+          source?: string | null
           statement: string
           subject: string
           topic?: string | null
+          year?: number | null
         }
         Update: {
+          alternatives_json?: Json | null
           choices?: Json
+          context?: string | null
+          correct_alternative?: string | null
           correct_choice?: string
           created_at?: string
           difficulty?: string
+          discipline?: string | null
           explanation?: string | null
+          files?: Json | null
           id?: string
+          image_url?: string | null
+          index?: number | null
+          language?: string
+          source?: string | null
           statement?: string
           subject?: string
           topic?: string | null
+          year?: number | null
         }
         Relationships: []
       }
@@ -214,6 +277,33 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      sync_logs: {
+        Row: {
+          details: Json | null
+          finished_at: string | null
+          id: string
+          job: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          details?: Json | null
+          finished_at?: string | null
+          id?: string
+          job: string
+          started_at?: string
+          status: string
+        }
+        Update: {
+          details?: Json | null
+          finished_at?: string | null
+          id?: string
+          job?: string
+          started_at?: string
+          status?: string
         }
         Relationships: []
       }
