@@ -12,7 +12,7 @@ import { toast } from "sonner";
 type Phase = "setup" | "running" | "done";
 
 const SIZES = [5, 10, 20];
-const DURATIONS = [5, 10, 20, 30]; // minutos
+const DURATIONS = [5, 10, 20, 30];
 
 export default function Simulado() {
   const { data: allQuestions, isLoading } = useQuestions();
@@ -33,6 +33,26 @@ export default function Simulado() {
     return Array.from(s);
   }, [allQuestions]);
 
+  const normalizeChoices = (raw: any): Record<string, string> => {
+    if (Array.isArray(raw)) {
+      const out: Record<string, string> = {};
+      raw.forEach((c: any, i) => {
+        const id = String(c?.id ?? String.fromCharCode(65 + i)).toUpperCase();
+        out[id] = String(c?.text ?? "");
+      });
+      return out;
+    }
+    if (raw && typeof raw === "object") {
+      const out: Record<string, string> = {};
+      Object.entries(raw).forEach(([k, v]: [string, any]) => {
+        out[String(k).toUpperCase()] = String(v?.text ?? v ?? "");
+      });
+      return out;
+    }
+    return {};
+  };
+  const normCorrect = (v: any) => String(v ?? "").toUpperCase();
+
   const start = () => {
     if (!allQuestions || allQuestions.length === 0) {
       toast.error("Sem questões disponíveis.");
@@ -46,14 +66,28 @@ export default function Simulado() {
     setPhase("running");
   };
 
+  const finish = async () => {
+    setPhase("done");
+    let correct = 0;
+    for (const q of pool) {
+      const chosen = answers[q.id];
+      if (!chosen) continue;
+      const isCorrect = chosen === normCorrect(q.correct_choice);
+      if (isCorrect) correct++;
+      try {
+        await submit.mutateAsync({ question_id: q.id, chosen, is_correct: isCorrect });
+      } catch {}
+    }
+    if (correct > 0) burst(correct * 10, "Simulado");
+    toast.success(`Simulado concluído: ${correct}/${pool.length}`);
+  };
+
   useEffect(() => {
     if (phase !== "running") return;
-    if (secondsLeft <= 0) {
-      finish();
-      return;
-    }
+    if (secondsLeft <= 0) { finish(); return; }
     const t = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, secondsLeft]);
 
   const current = pool[idx];
@@ -68,23 +102,6 @@ export default function Simulado() {
     else finish();
   };
 
-  const finish = async () => {
-    setPhase("done");
-    // Persist all attempts
-    let correct = 0;
-    for (const q of pool) {
-      const chosen = answers[q.id];
-      if (!chosen) continue;
-      const isCorrect = chosen === normCorrect(q.correct_choice);
-      if (isCorrect) correct++;
-      try {
-        await submit.mutateAsync({ question_id: q.id, chosen, is_correct: isCorrect });
-      } catch {/* noop */}
-    }
-    if (correct > 0) burst(correct * 10, "Simulado");
-    toast.success(`Simulado concluído: ${correct}/${pool.length}`);
-  };
-
   const reset = () => {
     setPhase("setup");
     setPool([]);
@@ -93,24 +110,6 @@ export default function Simulado() {
   };
 
   const fmtTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-
-  const normalizeChoices = (raw: any): Record<string, string> => {
-    if (Array.isArray(raw)) {
-      const out: Record<string, string> = {};
-      raw.forEach((c: any, i) => {
-        const id = String(c?.id ?? String.fromCharCode(65 + i)).toUpperCase();
-        out[id] = String(c?.text ?? "");
-      });
-      return out;
-    }
-    if (raw && typeof raw === "object") {
-      const out: Record<string, string> = {};
-      Object.entries(raw).forEach(([k, v]) => { out[String(k).toUpperCase()] = String(v); });
-      return out;
-    }
-    return {};
-  };
-  const normCorrect = (v: any) => String(v ?? "").toUpperCase();
 
   if (phase === "setup") {
     return (
@@ -156,7 +155,7 @@ export default function Simulado() {
   }
 
   if (phase === "done") {
-    const correct = pool.filter((q) => answers[q.id] === q.correct_choice).length;
+    const correct = pool.filter((q) => answers[q.id] === normCorrect(q.correct_choice)).length;
     const accuracy = Math.round((correct / pool.length) * 100);
     return (
       <div className="max-w-3xl mx-auto space-y-6">
@@ -174,20 +173,24 @@ export default function Simulado() {
           <h2 className="font-display text-xl">Revisão</h2>
           {pool.map((q, i) => {
             const chosen = answers[q.id];
-            const correct = normCorrect(q.correct_choice);
-            const ok = chosen === correct;
+            const correctK = normCorrect(q.correct_choice);
+            const ok = chosen === correctK;
             const choices = normalizeChoices(q.choices);
             return (
-              <Card key={q.id} className="p-4 space-y-2">
+              <Card key={q.id} className="p-4 space-y-3">
                 <div className="flex items-start gap-2">
                   {ok ? <CheckCircle2 className="size-5 text-focus shrink-0 mt-0.5" /> : <XCircle className="size-5 text-destructive shrink-0 mt-0.5" />}
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="text-xs text-muted-foreground mb-1">Q{i + 1} · {q.subject}</div>
                     <div className="text-sm">{q.statement}</div>
+                    {q.image_url && (
+                      <img src={q.image_url} alt="" loading="lazy"
+                        className="mt-2 rounded-lg max-h-48 object-contain border border-border" />
+                    )}
                     <div className="mt-2 text-xs space-y-1">
                       <div>Sua resposta: <span className="font-medium">{chosen ? `${chosen}) ${choices[chosen] ?? ""}` : "—"}</span></div>
                       {!ok && (
-                        <div className="text-focus">Correta: <span className="font-medium">{correct}) {choices[correct] ?? ""}</span></div>
+                        <div className="text-focus">Correta: <span className="font-medium">{correctK}) {choices[correctK] ?? ""}</span></div>
                       )}
                     </div>
                   </div>
@@ -200,18 +203,22 @@ export default function Simulado() {
     );
   }
 
-  // running
   const choices = normalizeChoices(current?.choices);
   const selected = current ? answers[current.id] : undefined;
+  const urgent = secondsLeft < 60;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <Badge variant="secondary" className="text-xs">Questão {idx + 1} de {pool.length}</Badge>
-        <div className={`font-mono text-lg ${secondsLeft < 60 ? "text-destructive" : ""}`}>
+        <motion.div
+          animate={urgent ? { scale: [1, 1.05, 1] } : {}}
+          transition={{ duration: 1, repeat: urgent ? Infinity : 0 }}
+          className={`font-mono text-lg ${urgent ? "text-destructive" : ""}`}
+        >
           <Timer className="size-4 inline mr-1" />
           {fmtTime(secondsLeft)}
-        </div>
+        </motion.div>
       </div>
       <Progress value={((idx + 1) / pool.length) * 100} />
 
@@ -224,23 +231,43 @@ export default function Simulado() {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.2 }}
           >
-            <Card className="p-6 space-y-4 shadow-soft">
+            <Card className="p-5 sm:p-6 space-y-4 shadow-soft">
               <div className="text-xs text-muted-foreground uppercase tracking-wide">{current.subject}</div>
-              <p className="text-lg">{current.statement}</p>
+              {current.context && (
+                <div className="p-3 rounded-lg bg-secondary/40 border border-border">
+                  <p className="text-xs text-muted-foreground italic">{current.context}</p>
+                </div>
+              )}
+              {current.image_url && (
+                <div className="rounded-xl overflow-hidden bg-secondary/50 border border-border">
+                  <img
+                    src={current.image_url}
+                    alt="Imagem da questão"
+                    loading="lazy"
+                    className="w-full max-h-80 object-contain mx-auto"
+                  />
+                </div>
+              )}
+              <p className="text-base sm:text-lg leading-relaxed">{current.statement}</p>
               <div className="space-y-2">
                 {Object.entries(choices).map(([k, v]) => (
-                  <button
+                  <motion.button
                     key={k}
                     onClick={() => choose(k)}
-                    className={`w-full text-left p-3 rounded-xl border transition-smooth ${
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                    className={`w-full text-left p-3 sm:p-4 rounded-xl border-2 transition-colors flex items-start gap-3 ${
                       selected === k
                         ? "border-accent bg-accent/10"
                         : "border-border hover:border-accent/50 hover:bg-secondary"
                     }`}
                   >
-                    <span className="font-medium mr-2">{k})</span>
-                    {v}
-                  </button>
+                    <span className={`size-8 sm:size-9 rounded-full border-2 grid place-items-center text-xs font-bold shrink-0
+                      ${selected === k ? "border-accent text-accent" : "border-border"}`}>
+                      {k}
+                    </span>
+                    <span className="flex-1 text-sm sm:text-base leading-relaxed pt-1">{v}</span>
+                  </motion.button>
                 ))}
               </div>
             </Card>
