@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
               year,
               index: Number(q.index),
               discipline,
-              language: q.language ?? null,
+              language: q.language ?? "",
               statement: String(q.context ? `${q.context}\n\n${q.alternativesIntroduction ?? ""}\n\n${q.title ?? ""}` : (q.title ?? q.statement ?? "")).trim(),
               context: q.context ?? null,
               image_url: q.files?.[0] ?? null,
