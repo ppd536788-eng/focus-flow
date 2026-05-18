@@ -48,19 +48,41 @@ export const AppShell = () => {
             </Button>
           </div>
         </div>
+        {/* Desktop horizontal nav under header */}
+        <nav className="hidden sm:block border-t border-border/60">
+          <div className="container flex items-center gap-1 overflow-x-auto py-2">
+            {links.map(({ to, label, icon: Icon, end }) => (
+              <NavLink key={to} to={to} end={end as any}
+                className={({ isActive }) =>
+                  `inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-smooth ${
+                    isActive
+                      ? "bg-gradient-warm text-accent-foreground shadow-glow"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  }`
+                }>
+                <Icon className="size-4" />
+                {label}
+              </NavLink>
+            ))}
+          </div>
+        </nav>
       </header>
 
       <main className="flex-1 container py-6 sm:py-10 pb-28 sm:pb-10">
         <Outlet />
       </main>
 
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav — horizontal scroll, evita aperto */}
       <nav className="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-card/95 backdrop-blur-xl border-t border-border">
-        <div className="grid grid-cols-9">
+        <div className="flex overflow-x-auto gap-1 px-2 py-2 scrollbar-none">
           {links.map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end as any}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-1 py-3 text-[10px] transition-smooth ${isActive ? "text-accent" : "text-muted-foreground"}`
+                `flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] min-w-[64px] shrink-0 transition-smooth ${
+                  isActive
+                    ? "bg-gradient-warm text-accent-foreground shadow-glow"
+                    : "text-muted-foreground"
+                }`
               }>
               <Icon className="size-5" />
               {label}
@@ -68,18 +90,6 @@ export const AppShell = () => {
           ))}
         </div>
       </nav>
-
-      {/* Desktop side dock */}
-      <aside className="hidden sm:flex fixed left-6 top-1/2 -translate-y-1/2 z-20 flex-col gap-1 p-2 rounded-2xl bg-card/80 backdrop-blur-xl border border-border shadow-soft">
-        {links.map(({ to, label, icon: Icon, end }) => (
-          <NavLink key={to} to={to} end={end as any} title={label}
-            className={({ isActive }) =>
-              `size-11 grid place-items-center rounded-xl transition-smooth ${isActive ? "bg-gradient-warm text-accent-foreground shadow-glow" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`
-            }>
-            <Icon className="size-5" />
-          </NavLink>
-        ))}
-      </aside>
     </div>
   );
 };
