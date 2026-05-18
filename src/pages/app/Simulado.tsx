@@ -14,6 +14,18 @@ type Phase = "setup" | "running" | "done";
 const SIZES = [5, 10, 20];
 const DURATIONS = [5, 10, 20, 30];
 
+const cleanSource = (text?: string | null) => {
+  if (!text) return "";
+  return String(text)
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/www\.\S+/gi, "")
+    .replace(/dispon[íi]vel em:?/gi, "")
+    .replace(/acesso em[^.]*\.?/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/[\s.,;:-]+$/g, "")
+    .trim();
+};
+
 export default function Simulado() {
   const { data: allQuestions, isLoading } = useQuestions();
   const submit = useSubmitAttempt();
@@ -233,11 +245,6 @@ export default function Simulado() {
           >
             <Card className="p-5 sm:p-6 space-y-4 shadow-soft">
               <div className="text-xs text-muted-foreground uppercase tracking-wide">{current.subject}</div>
-              {current.context && (
-                <div className="p-3 rounded-lg bg-secondary/40 border border-border">
-                  <p className="text-xs text-muted-foreground italic">{current.context}</p>
-                </div>
-              )}
               {current.image_url && (
                 <div className="rounded-xl overflow-hidden bg-secondary/50 border border-border">
                   <img
@@ -247,6 +254,11 @@ export default function Simulado() {
                     className="w-full max-h-80 object-contain mx-auto"
                   />
                 </div>
+              )}
+              {cleanSource(current.context) && (
+                <p className="text-[11px] text-foreground/70">
+                  <span className="font-semibold">Fonte:</span> {cleanSource(current.context)}
+                </p>
               )}
               <p className="text-base sm:text-lg leading-relaxed">{current.statement}</p>
               <div className="space-y-2">
