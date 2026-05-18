@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Sparkles, GripVertical } from "lucide-react";
+import { Loader2, Sparkles, GripVertical, Pencil, Trash2, Plus } from "lucide-react";
 import {
   DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
   closestCenter, type DragEndEvent, type DragStartEvent,
@@ -12,6 +12,9 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useActivePlan, useUpdatePlanData, useAdaptPlan } from "@/hooks/useStudyPlan";
 import { toast } from "sonner";
 
@@ -26,6 +29,7 @@ const Schedule = () => {
   const adapt = useAdaptPlan();
   const [board, setBoard] = useState<Board | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{ day: Day; uid?: string; item: Omit<Item, "uid"> } | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   // Initialize board from plan
@@ -101,6 +105,34 @@ const Schedule = () => {
     );
   };
 
+  const saveEdit = () => {
+    if (!editing || !board) return;
+    const { day, uid, item } = editing;
+    if (!item.subject.trim() || !item.topic.trim()) {
+      toast.error("Preencha matéria e assunto");
+      return;
+    }
+    const next: Board = { ...board, [day]: [...board[day]] };
+    if (uid) {
+      const i = next[day].findIndex((x) => x.uid === uid);
+      if (i !== -1) next[day][i] = { ...next[day][i], ...item };
+    } else {
+      next[day].push({ uid: `${day}-${Date.now()}-${item.topic}`, ...item });
+    }
+    setBoard(next);
+    persist(next);
+    setEditing(null);
+  };
+
+  const deleteEdit = () => {
+    if (!editing || !editing.uid || !board) return;
+    const { day, uid } = editing;
+    const next: Board = { ...board, [day]: board[day].filter((x) => x.uid !== uid) };
+    setBoard(next);
+    persist(next);
+    setEditing(null);
+  };
+
   const onAdapt = () => {
     adapt.mutate(undefined, {
       onSuccess: () => toast.success("Plano adaptado ao seu desempenho recente"),
@@ -140,7 +172,15 @@ const Schedule = () => {
             {DAYS.map((d) => <div key={d} className="p-3 text-center font-medium border-r last:border-r-0 border-border">{d}</div>)}
           </div>
           <div className="grid grid-cols-7 min-h-[60vh]">
-            {DAYS.map((d) => <DayColumn key={d} day={d} items={board[d]} />)}
+            {DAYS.map((d) => (
+              <DayColumn
+                key={d}
+                day={d}
+                items={board[d]}
+                onEdit={(it) => setEditing({ day: d, uid: it.uid, item: { subject: it.subject, topic: it.topic, duration_min: it.duration_min, kind: it.kind } })}
+                onAdd={() => setEditing({ day: d, item: { subject: "", topic: "", duration_min: 30, kind: "estudo" } })}
+              />
+            ))}
           </div>
         </div>
 
@@ -148,6 +188,52 @@ const Schedule = () => {
           {activeItem ? <ItemCard item={activeItem} dragging /> : null}
         </DragOverlay>
       </DndContext>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editing?.uid ? "Editar bloco" : "Novo bloco"}</DialogTitle>
+          </DialogHeader>
+          {editing && (
+            <div className="space-y-3">
+              <div>
+                <Label>Matéria</Label>
+                <Input value={editing.item.subject}
+                  onChange={(e) => setEditing({ ...editing, item: { ...editing.item, subject: e.target.value } })}
+                  placeholder="Ex.: Matemática" />
+              </div>
+              <div>
+                <Label>Assunto</Label>
+                <Input value={editing.item.topic}
+                  onChange={(e) => setEditing({ ...editing, item: { ...editing.item, topic: e.target.value } })}
+                  placeholder="Ex.: Funções do 2º grau" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Duração (min)</Label>
+                  <Input type="number" min={5} step={5} value={editing.item.duration_min}
+                    onChange={(e) => setEditing({ ...editing, item: { ...editing.item, duration_min: Number(e.target.value) || 0 } })} />
+                </div>
+                <div>
+                  <Label>Tipo</Label>
+                  <Input value={editing.item.kind}
+                    onChange={(e) => setEditing({ ...editing, item: { ...editing.item, kind: e.target.value } })}
+                    placeholder="estudo, revisão, exercícios" />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-2">
+            {editing?.uid && (
+              <Button variant="outline" onClick={deleteEdit} className="mr-auto text-destructive">
+                <Trash2 className="size-4 mr-1" /> Remover
+              </Button>
+            )}
+            <Button variant="ghost" onClick={() => setEditing(null)}>Cancelar</Button>
+            <Button onClick={saveEdit} className="bg-gradient-warm text-accent-foreground">Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {(plan.data_json as any)?.tips?.length > 0 && (
         <div className="rounded-2xl bg-gradient-surface border border-border p-6">
@@ -161,20 +247,26 @@ const Schedule = () => {
   );
 };
 
-const DayColumn = ({ day, items }: { day: Day; items: Item[] }) => {
+const DayColumn = ({ day, items, onEdit, onAdd }: { day: Day; items: Item[]; onEdit: (it: Item) => void; onAdd: () => void }) => {
   const { setNodeRef, isOver } = useDroppable({ id: day });
   return (
     <SortableContext id={day} items={items.map((i) => i.uid)} strategy={verticalListSortingStrategy}>
       <div ref={setNodeRef}
         className={`border-r last:border-r-0 border-border p-2 space-y-2 transition-colors ${isOver ? "bg-accent/5" : ""}`}>
-        {items.map((it) => <SortableItem key={it.uid} item={it} />)}
+        {items.map((it) => <SortableItem key={it.uid} item={it} onEdit={() => onEdit(it)} />)}
         {!items.length && <div className="text-[11px] text-muted-foreground/50 text-center py-4">livre</div>}
+        <button
+          onClick={onAdd}
+          className="w-full mt-1 text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center justify-center gap-1 py-1.5 rounded-md border border-dashed border-border hover:border-accent/50 transition-smooth"
+        >
+          <Plus className="size-3" /> adicionar
+        </button>
       </div>
     </SortableContext>
   );
 };
 
-const SortableItem = ({ item }: { item: Item }) => {
+const SortableItem = ({ item, onEdit }: { item: Item; onEdit: () => void }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.uid });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -182,26 +274,43 @@ const SortableItem = ({ item }: { item: Item }) => {
     opacity: isDragging ? 0.4 : 1,
   };
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <ItemCard item={item} />
+    <div ref={setNodeRef} style={style}>
+      <ItemCard item={item} dragHandleProps={{ ...attributes, ...listeners }} onEdit={onEdit} />
     </div>
   );
 };
 
-const ItemCard = ({ item, dragging }: { item: Item; dragging?: boolean }) => (
+const ItemCard = ({ item, dragging, dragHandleProps, onEdit }: { item: Item; dragging?: boolean; dragHandleProps?: any; onEdit?: () => void }) => (
   <motion.div
     layout
-    className={`group rounded-lg border bg-background p-2.5 text-xs cursor-grab active:cursor-grabbing select-none
+    className={`group rounded-lg border bg-background p-2.5 text-xs select-none
       ${dragging ? "border-accent shadow-glow" : "border-border hover:shadow-soft"}`}>
     <div className="flex items-start gap-1.5">
-      <GripVertical className="size-3 text-muted-foreground/40 mt-0.5 shrink-0" />
+      <button
+        {...(dragHandleProps ?? {})}
+        className="cursor-grab active:cursor-grabbing touch-none mt-0.5 shrink-0 text-muted-foreground/40 hover:text-muted-foreground"
+        aria-label="Arrastar"
+      >
+        <GripVertical className="size-3" />
+      </button>
       <div className="flex-1 min-w-0">
-        <div className="font-medium text-foreground line-clamp-2">{item.topic}</div>
-        <div className="text-muted-foreground mt-1">{item.subject}</div>
-        <div className="mt-1.5 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-accent">
-          {item.duration_min}m · {item.kind}
+        <div className="inline-block px-1.5 py-0.5 rounded bg-accent/15 text-accent text-[10px] font-semibold uppercase tracking-wider mb-1">
+          {item.subject}
+        </div>
+        <div className="font-semibold text-foreground text-sm leading-snug line-clamp-2">{item.topic}</div>
+        <div className="mt-1.5 text-[10px] text-muted-foreground uppercase tracking-wider">
+          {item.duration_min} min · {item.kind}
         </div>
       </div>
+      {onEdit && (
+        <button
+          onClick={onEdit}
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+          aria-label="Editar bloco"
+        >
+          <Pencil className="size-3" />
+        </button>
+      )}
     </div>
   </motion.div>
 );
