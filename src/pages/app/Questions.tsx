@@ -1,11 +1,23 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import ReactMarkdown from "react-markdown";
-import { Check, ChevronRight, Loader2, Sparkles, X } from "lucide-react";
+import { Check, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useQuestions, useSubmitAttempt, useExplainError } from "@/hooks/useQuestions";
+import { useQuestions, useSubmitAttempt } from "@/hooks/useQuestions";
 import { useXpBurst } from "@/providers/XpProvider";
 import { toast } from "sonner";
+
+// Remove URLs e marcadores como "Disponível em:" — mantém apenas o nome da fonte
+const cleanSource = (text?: string | null) => {
+  if (!text) return "";
+  return String(text)
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/www\.\S+/gi, "")
+    .replace(/dispon[íi]vel em:?/gi, "")
+    .replace(/acesso em[^.]*\.?/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/[\s.,;:-]+$/g, "")
+    .trim();
+};
 
 const Questions = () => {
   const [subject, setSubject] = useState<string | undefined>();
@@ -14,9 +26,7 @@ const Questions = () => {
   const [chosen, setChosen] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const submit = useSubmitAttempt();
-  const explain = useExplainError();
   const { burst } = useXpBurst();
-  const [aiText, setAiText] = useState<string | null>(null);
 
   const subjects = useMemo(() => {
     return Array.from(new Set((questions ?? []).map((q: any) => q.subject)));
@@ -44,22 +54,10 @@ const Questions = () => {
     submit.mutate({ question_id: q.id, chosen: cid, is_correct: correct }, {
       onSuccess: () => { if (correct) { burst(10, "Acertou!"); toast.success("Resposta correta!"); } },
     });
-    if (!correct) {
-      setAiText(null);
-      explain.mutate({
-        question: q.statement,
-        userAnswer: choices.find((c) => c.id === cid)?.text ?? cid,
-        correctAnswer: choices.find((c) => c.id === correctId)?.text ?? correctId,
-        subject: q.subject,
-      }, {
-        onSuccess: (d) => setAiText(d.explanation),
-        onError: () => setAiText(q.explanation || "Revise o conceito e tente novamente."),
-      });
-    }
   };
 
   const next = () => {
-    setChosen(null); setRevealed(false); setAiText(null);
+    setChosen(null); setRevealed(false);
     setIdx((i) => Math.min((questions?.length ?? 1) - 1, i + 1));
   };
 
@@ -100,12 +98,6 @@ const Questions = () => {
             </span>
           </div>
 
-          {q.context && (
-            <div className="mb-5 p-4 rounded-xl bg-secondary/40 border border-border">
-              <p className="text-sm text-muted-foreground italic leading-relaxed">{q.context}</p>
-            </div>
-          )}
-
           {q.image_url && (
             <motion.div
               initial={{ opacity: 0, scale: 0.97 }}
@@ -120,6 +112,12 @@ const Questions = () => {
                 loading="lazy"
               />
             </motion.div>
+          )}
+
+          {cleanSource(q.context) && (
+            <p className="text-[11px] text-foreground/70 mb-3">
+              <span className="font-semibold">Fonte:</span> {cleanSource(q.context)}
+            </p>
           )}
 
           <p className="font-display text-lg sm:text-2xl text-balance mb-6 leading-relaxed">{q.statement}</p>
@@ -159,23 +157,13 @@ const Questions = () => {
             })}
           </div>
 
-          {revealed && (
+          {revealed && (q.explanation || chosen === correctId) && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-              className="mt-6 rounded-2xl bg-gradient-surface border border-border p-5">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-accent mb-2">
-                <Sparkles className="size-3.5" /> Explicação
-              </div>
-              {chosen === correctId ? (
-                <p className="text-sm">{q.explanation || "Resposta correta!"}</p>
-              ) : explain.isPending && !aiText ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" /> Analisando seu erro com IA…
-                </div>
-              ) : (
-                <div className="prose prose-sm max-w-none text-foreground">
-                  <ReactMarkdown>{aiText || q.explanation || ""}</ReactMarkdown>
-                </div>
-              )}
+              className="mt-6 rounded-2xl bg-secondary/40 border border-border p-5">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Justificativa</div>
+              <p className="text-sm leading-relaxed">
+                {q.explanation || (chosen === correctId ? "Resposta correta!" : "Sem justificativa disponível para esta questão.")}
+              </p>
             </motion.div>
           )}
 
